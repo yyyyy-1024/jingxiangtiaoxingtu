@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>各省风电装机容量 · 多层环形图</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js">
+    </script>
+    <style>
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            background: #fafafa;
+        }
+
+        #chart {
+            width: 100%;
+            height: 95vh;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03);
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chart"></div>
+    <script>
+        const chartDom = document.getElementById('chart');
+        const myChart = echarts.init(chartDom, null, { renderer: 'canvas' });
+
+        // ----- 数据 -----
+        const dataList = [
+            { name: '山东', shortName: '鲁', value: 26.69 },
+            { name: '甘肃', shortName: '甘', value: 32.15 },
+            { name: '河北', shortName: '冀', value: 38.09 },
+            { name: '新疆', shortName: '新', value: 47.08 },
+            { name: '内蒙古', shortName: '蒙', value: 85.99 }
+        ];
+
+        // ----- 视觉常量 -----
+        const polarOuter = '88%';
+        const polarInner = '6%';
+        const centerRadius = '6%';
+        const borderOuter = '88%';
+        const borderInner = '87.6%';
+
+        const barWidth = 34;
+        const categoryGap = '14%';
+
+        const dotColor = '#8a3e3e';
+        const dotSize = 10;
+
+        const nameFontSize = 15;
+        const valueFontSize = 14;
+        const textColor = '#1a1a2e';
+        const textFontFamily = 'Microsoft YaHei, -apple-system, sans-serif';
+        const textFontWeight = '700';
+
+        const nameOffsetPx = 18;
+        const valueRadialPx = 24;
+
+        // ----- 构建 option -----
+        function buildOption() {
+            const startLabelData = dataList.map(function (d, i) {
+                return { value: [0, i], idx: i };
+            });
+            const midDotData = dataList.map(function (d, i) {
+                return { value: [d.value / 2, i], idx: i };
+            });
+            const endLabelData = dataList.map(function (d, i) {
+                return { value: [d.value, i], idx: i };
+            });
+
+            return {
+                backgroundColor: '#ffffff',
+                title: {
+                    text: '2024年全国前五省份风电装机容量（单位：GW）',
+                    left: 'center',
+                    top: 18,
+                    textStyle: {
+                        fontSize: 20,
+                        fontWeight: '700',
+                        fontFamily: textFontFamily,
+                        color: textColor,
+                        lineHeight: 28
+                    }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    axisPointer: { type: 'none' },
+                    formatter: function (params) {
+                        if (params.componentType !== 'series') return '';
+                        if (params.seriesType === 'pie') return '';
+                        const idx = (params.data && params.data.idx != null) ? params.data.idx : params.dataIndex;
+                        const item = dataList[idx];
+                        if (!item) return '';
+                        return `<strong>${item.name}</strong><br/>装机容量: <b>${item.value}</b> GW`;
+                    }
+                },
+                polar: [{
+                    center: ['50%', '53%'],
+                    radius: [polarInner, polarOuter]
+                }],
+                angleAxis: {
+                    type: 'value',
+                    min: 0,
+                    max: 90,
+                    clockwise: true,
+                    startAngle: 90,
+                    axisLine: { show: false },
+                    axisTick: { show: false },
+                    splitLine: {
+                        show: true,
+                        lineStyle: { color: '#e4e4ed', type: 'solid', width: 1.2 }
+                    },
+                    axisLabel: {
+                        show: true,
+                        fontSize: 11,
+                        color: '#9a9aab',
+                        fontWeight: 400,
+                        formatter: '{value}',
+                        margin: 10
+                    }
+                },
+                radiusAxis: {
+                    type: 'category',
+                    show: true,
+                    data: dataList.map(function (d) { return d.shortName; }),
+                    axisLine: {
+                        show: true,
+                        lineStyle: {
+                            color: 'rgba(180,180,195,0.25)',
+                            width: 0.8
+                        }
+                    },
+                    axisTick: {
+                        show: true,
+                        length: 6,
+                        lineStyle: {
+                            color: 'rgba(180,180,195,0.35)',
+                            width: 1
+                        }
+                    },
+                    axisLabel: {
+                        show: true,
+                        fontSize: 13,
+                        fontWeight: '700',
+                        fontFamily: textFontFamily,
+                        color: '#c96464',
+                        margin: 14,
+                        align: 'center',
+                        verticalAlign: 'middle'
+                    },
+                    splitLine: {
+                        show: false
+                    }
+                },
+                series: [{
+                    // 1. 柱形
+                    name: 'bar-series',
+                    type: 'bar',
+                    coordinateSystem: 'polar',
+                    barWidth: barWidth,
+                    barCategoryGap: categoryGap,
+                    roundCap: false,
+                    data: dataList.map(function (d) { return d.value; }),
+                    itemStyle: {
+                        color: '#c96464',
+                        borderColor: 'rgba(255,255,255,0.2)',
+                        borderWidth: 0.5
+                    },
+                    emphasis: {
+                        itemStyle: { color: '#b24e4e' }
+                    },
+                    label: { show: false },
+                    z: 200,
+                    zlevel: 1
+                }, {
+                    // 2. 省份简称标注 (圆弧起始位置)
+                    name: 'name-labels',
+                    type: 'scatter',
+                    coordinateSystem: 'polar',
+                    symbol: 'none',
+                    symbolSize: 0,
+                    data: startLabelData,
+                    label: {
+                        show: true,
+                        position: 'left',
+                        fontSize: nameFontSize,
+                        fontWeight: textFontWeight,
+                        fontFamily: textFontFamily,
+                        color: textColor,
+                        align: 'right',
+                        verticalAlign: 'middle',
+                        formatter: function (params) {
+                            const idx = (params.data && params.data.idx != null) ? params.data.idx : params
+                                .dataIndex;
+                            return dataList[idx].shortName;
+                        },
+                        distance: 0,
+                        backgroundColor: '#ffffff',
+                        padding: [4, 10, 4, 10],
+                        borderRadius: 6,
+                        shadowColor: 'rgba(0,0,0,0.08)',
+                        shadowBlur: 6,
+                        shadowOffsetX: 0,
+                        shadowOffsetY: 2,
+                        borderColor: 'rgba(201,100,100,0.15)',
+                        borderWidth: 1
+                    },
+                    labelLayout: function (params) {
+                        const idx = (params.data && params.data.idx != null) ? params.data.idx : params.dataIndex;
+                        const w = params.rect ? params.rect.width : 40;
+                        const h = params.rect ? params.rect.height : 30;
+                        const reversedIdx = (dataList.length - 1) - idx;
+                        const yOffset = (reversedIdx - (dataList.length - 1) / 2) * (h + 4);
+                        return {
+                            x: params.x - (w + nameOffsetPx),
+                            y: params.y + yOffset,
+                            moveOverlap: 'shiftY',
+                            align: 'right',
+                            verticalAlign: 'middle'
+                        };
+                    },
+                    z: 650,
+                    zlevel: 5,
+                    silent: false
+                }, {
+                    // 3. 中间小圆点
+                    name: 'mid-dots',
+                    type: 'scatter',
+                    coordinateSystem: 'polar',
+                    symbol: 'circle',
+                    symbolSize: dotSize,
+                    data: midDotData,
+                    itemStyle: {
+                        color: dotColor,
+                        borderColor: '#ffffff',
+                        borderWidth: 2.5,
+                        shadowBlur: 4,
+                        shadowColor: 'rgba(0,0,0,0.08)'
+                    },
+                    label: { show: false },
+                    z: 700,
+                    zlevel: 4,
+                    silent: false
+                }, {
+                    // 4. 数值标注 (圆弧末端位置)
+                    name: 'value-labels',
+                    type: 'scatter',
+                    coordinateSystem: 'polar',
+                    symbol: 'none',
+                    symbolSize: 0,
+                    data: endLabelData,
+                    label: {
+                        show: true,
+                        position: 'top',
+                        fontSize: valueFontSize,
+                        fontWeight: textFontWeight,
+                        fontFamily: textFontFamily,
+                        color: textColor,
+                        align: 'center',
+                        verticalAlign: 'middle',
+                        formatter: function (params) {
+                            const idx = (params.data && params.data.idx != null) ? params.data.idx : params
+                                .dataIndex;
+                            return dataList[idx].value + ' GW';
+                        },
+                        distance: 0,
+                        backgroundColor: 'rgba(255,255,255,0.98)',
+                        padding: [4, 10, 4, 10],
+                        borderRadius: 6,
+                        shadowColor: 'rgba(0,0,0,0.10)',
+                        shadowBlur: 8,
+                        shadowOffsetX: 0,
+                        shadowOffsetY: 2,
+                        borderColor: 'rgba(201,100,100,0.12)',
+                        borderWidth: 1
+                    },
+                    labelLayout: function (params) {
+                        const idx = (params.data && params.data.idx != null) ? params.data.idx : params.dataIndex;
+                        const value = dataList[idx].value;
+                        const startAngle = 90;
+                        const mathAngleDeg = startAngle - value;
+                        const angleRad = (mathAngleDeg * Math.PI) / 180;
+                        const radialOffset = valueRadialPx + 2;
+                        const dx = Math.round(Math.cos(angleRad) * radialOffset);
+                        const dy = -Math.round(Math.sin(angleRad) * radialOffset);
+                        let align = 'left';
+                        let verticalAlign = 'bottom';
+                        if (mathAngleDeg >= 80 && mathAngleDeg <= 100) {
+                            align = 'center';
+                            verticalAlign = 'bottom';
+                        } else if (mathAngleDeg > 45 && mathAngleDeg < 80) {
+                            align = 'left';
+                            verticalAlign = 'bottom';
+                        } else if (mathAngleDeg >= 10 && mathAngleDeg <= 45) {
+                            align = 'left';
+                            verticalAlign = 'bottom';
+                        } else if (mathAngleDeg > -10 && mathAngleDeg < 10) {
+                            align = 'left';
+                            verticalAlign = 'middle';
+                        } else if (mathAngleDeg >= -45 && mathAngleDeg <= -10) {
+                            align = 'left';
+                            verticalAlign = 'top';
+                        } else if (mathAngleDeg > -80 && mathAngleDeg < -45) {
+                            align = 'left';
+                            verticalAlign = 'top';
+                        } else if (mathAngleDeg >= -100 && mathAngleDeg <= -80) {
+                            align = 'center';
+                            verticalAlign = 'top';
+                        } else if (mathAngleDeg > -135 && mathAngleDeg < -100) {
+                            align = 'right';
+                            verticalAlign = 'top';
+                        } else if (mathAngleDeg >= -170 && mathAngleDeg <= -135) {
+                            align = 'right';
+                            verticalAlign = 'top';
+                        } else if (mathAngleDeg > 170 || mathAngleDeg < -170) {
+                            align = 'center';
+                            verticalAlign = 'top';
+                        } else if (mathAngleDeg > 135 && mathAngleDeg <= 170) {
+                            align = 'right';
+                            verticalAlign = 'top';
+                        } else if (mathAngleDeg > 100 && mathAngleDeg <= 135) {
+                            align = 'right';
+                            verticalAlign = 'bottom';
+                        }
+                        return {
+                            dx: dx,
+                            dy: dy,
+                            align: align,
+                            verticalAlign: verticalAlign,
+                            moveOverlap: 'shiftY'
+                        };
+                    },
+                    z: 680,
+                    zlevel: 5,
+                    silent: false
+                }, {
+                    // 5. 外圈装饰边框
+                    name: 'outer-border',
+                    type: 'pie',
+                    center: ['50%', '53%'],
+                    radius: [borderInner, borderOuter],
+                    startAngle: 0,
+                    silent: true,
+                    label: { show: false },
+                    labelLine: { show: false },
+                    data: [{ value: 1 }],
+                    itemStyle: {
+                        color: 'rgba(200,200,210,0.2)',
+                        borderColor: 'rgba(180,180,195,0.25)',
+                        borderWidth: 0.5
+                    },
+                    z: 400,
+                    zlevel: 2
+                }, {
+                    // 6. 中心圆
+                    name: 'center-circle',
+                    type: 'pie',
+                    center: ['50%', '53%'],
+                    radius: ['0%', centerRadius],
+                    startAngle: 90,
+                    silent: true,
+                    label: { show: false },
+                    labelLine: { show: false },
+                    data: [{ value: 1 }],
+                    itemStyle: {
+                        color: '#ffffff',
+                        borderColor: 'rgba(180,180,195,0.2)',
+                        borderWidth: 0.8
+                    },
+                    z: 550,
+                    zlevel: 3
+                }]
+            };
+        }
+
+        // ----- 渲染 -----
+        myChart.setOption(buildOption());
+
+        // ----- resize 防抖 -----
+        let resizeTimer = null;
+        window.addEventListener('resize', function () {
+            if (resizeTimer) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function () {
+                myChart.resize();
+            }, 80);
+        });
+
+        setTimeout(() => { myChart.resize(); }, 60);
+    </script>
+</body>
+
+</html>
